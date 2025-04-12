@@ -1,38 +1,39 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const path = require('path');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const adsRoutes = require('./routes/ads.routes');
 
 const app = express();
 
+app.use(cors({
+	origin: '*',
+	methods: 'GET,POST,PUT,DELETE'
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'client/build')));
 
-app.use(cors());
-
-mongoose.connect('mongodb://localhost:27017/your_database_name', {
+mongoose.connect('mongodb://localhost:27017/announcements', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+const db = mongoose.connection;
+db.once('open', () => {
+  console.log('Connected to the database');
+});
+db.on('error', err => console.log('Error ' + err));
 
-const adsRoutes = require('./routes/ads.routes');
 app.use('/api/ads', adsRoutes);
-
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-  });
-}
-
+app.use((req, res) => {
+  res.status(404).json({ message: 'Not found...' });
+})
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Coś poszło nie tak!' });
+  res.status(500).json({ message: 'Something wrong!' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Serwer działa na porcie ${PORT}`);
+  console.log(`Server listen on ${PORT}`);
 });
