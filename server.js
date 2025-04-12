@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const adsRoutes = require('./routes/ads.routes');
+const usersRoutes = require('./routes/users.routes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ db.once('open', () => {
 db.on('error', err => console.log('Error ' + err));
 
 app.use('/api/ads', adsRoutes);
+app.use('/api/ads', usersRoutes);
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found...' });
 })
