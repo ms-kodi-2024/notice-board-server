@@ -3,8 +3,8 @@ const router = express.Router();
 const authMiddleware = require('../utils/authMiddleware');
 const authController = require('../controllers/auth.controller');
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+router.post('/register', authController.validateRegister, authController.register);
+router.post('/login', authController.validateLogin, authController.login);
 router.get('/user', authMiddleware, authController.getUser);
 router.delete('/logout', authMiddleware, authController.logout);
 

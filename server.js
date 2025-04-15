@@ -18,7 +18,10 @@ app.listen(PORT, () => {
 
 connectToDB();
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8000',
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'client/build')));

@@ -1,22 +1,62 @@
+const { body, validationResult } = require('express-validator');
 const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const Session = require('../models/session.model');
 
+exports.validateRegister = [
+  body('login')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Login is required'),
+  body('password')
+    .isString()
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+  body('avatar')
+    .optional()
+    .isString()
+    .withMessage('Avatar must be a string'),
+  body('phone')
+    .optional()
+    .isString()
+    .withMessage('Phone must be a string')
+];
+
+exports.validateLogin = [
+  body('login')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Login is required'),
+  body('password')
+    .isString()
+    .notEmpty()
+    .withMessage('Password is required')
+];
+
 exports.register = async (req, res, next) => {
   try {
-    const { login, password, avatar, phone } = req.body;
-    if (login && typeof login === 'string' && password && typeof password === 'string' && avatar && typeof avatar === 'string' && phone && typeof phone === 'string') {
-      const userWithLogin = await User.findOne({ login });
-      if (userWithLogin) {
-        return res.status(409).send({ message: 'User with this login already exists' });
-      }
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = new User({ login, password: hashedPassword, avatar, phone });
-      await newUser.save();
-      res.status(201).send({ message: 'User registered successfully ' + newUser.login });
-    } else {
-      res.status(422).send({ message: 'Bad request' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
     }
+    const { login, password, avatar, phone } = req.body;
+    const userWithLogin = await User.findOne({ login });
+    if (userWithLogin) {
+      return res.status(409).send({ message: 'User with this login already exists' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      login,
+      password: hashedPassword,
+      avatar: (avatar && typeof avatar === 'string') ? avatar : '',
+      phone: (phone && typeof phone === 'string') ? phone : ''
+    });
+    await newUser.save();
+    res.status(201).send({ message: 'User registered successfully ' + newUser.login });
   } catch (error) {
     next(error);
   }
@@ -24,27 +64,27 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()){
+      return res.status(422).json({ errors: errors.array() });
+    }
     const { login, password } = req.body;
-    if (login && typeof login === 'string' && password && typeof password === 'string') {
-      const user = await User.findOne({ login });
-      if (!user) {
-        return res.status(401).send({ message: 'Login or password is incorrect' });
-      } else {
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (isPasswordValid) {
-          req.session.user = {
-            id: user._id,
-            login: user.login,
-            avatar: user.avatar,
-            phone: user.phone
-          };
-          return res.status(200).send({ message: 'Login successful' });
-        } else {
-          return res.status(401).send({ message: 'Login or password is incorrect' });
-        }
-      }
+    const user = await User.findOne({ login });
+    if (!user) {
+      return res.status(401).send({ message: 'Login or password are incorrect' });
     } else {
-      res.status(401).send({ message: 'Login or password is incorrect' });
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (isPasswordValid) {
+        req.session.user = {
+          id: user._id,
+          login: user.login,
+          avatar: user.avatar,
+          phone: user.phone
+        };
+        return res.status(200).send({ message: 'Login successful' });
+      } else {
+        return res.status(401).send({ message: 'Login or password are incorrect' });
+      }
     }
   } catch (error) {
     next(error);

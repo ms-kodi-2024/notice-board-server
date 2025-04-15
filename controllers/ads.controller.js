@@ -9,8 +9,13 @@ exports.validateAd = [
     .isLength({ min: 20, max: 1000 })
     .withMessage('Description must be between 20 and 1000 characters long.'),
   body('photo')
-    .isURL()
-    .withMessage('Photo must be a valid URL.'),
+    .custom((value) => {
+      if (typeof value === 'string' && value.startsWith('/')) {
+        return true;
+      }
+      return validator.isURL(value);
+    })
+    .withMessage('Photo must be a valid absolute URL or a relative path.'),
   body('price')
     .isNumeric()
     .withMessage('Price must be a number.')
