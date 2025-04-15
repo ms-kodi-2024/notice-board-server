@@ -4,7 +4,6 @@ const userSchema = new mongoose.Schema({
   login: {
     type: String,
     required: true,
-    unique: true
   },
   password: {
     type: String,
@@ -12,11 +11,13 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    required: true
+    required: true,
+    default: ''
   },
   phone: {
     type: String,
-    required: true
+    required: true,
+    default: ''
   }
 });
 

@@ -1,4 +1,28 @@
+const { body, validationResult } = require('express-validator');
 const Ad = require('../models/ad.model');
+
+exports.validateAd = [
+  body('title')
+    .isLength({ min: 10, max: 50 })
+    .withMessage('Title must be between 10 and 50 characters long.'),
+  body('description')
+    .isLength({ min: 20, max: 1000 })
+    .withMessage('Description must be between 20 and 1000 characters long.'),
+  body('photo')
+    .isURL()
+    .withMessage('Photo must be a valid URL.'),
+  body('price')
+    .isNumeric()
+    .withMessage('Price must be a number.')
+    .custom(value => value >= 0)
+    .withMessage('Price must be at least 0.'),
+  body('location')
+    .notEmpty()
+    .withMessage('Location is required.'),
+  body('sellerInfo')
+    .notEmpty()
+    .withMessage('Seller info is required.')
+];
 
 exports.getAds = async (req, res, next) => {
   try {
@@ -22,6 +46,10 @@ exports.getAdById = async (req, res, next) => {
 };
 
 exports.createAd = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ errors: errors.array() });
+  }
   try {
     const { title, description, photo, price, location, sellerInfo } = req.body;
     const newAd = new Ad({
@@ -40,6 +68,10 @@ exports.createAd = async (req, res, next) => {
 };
 
 exports.updateAd = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ errors: errors.array() });
+  }
   try {
     const updatedAd = await Ad.findByIdAndUpdate(
       req.params.id,

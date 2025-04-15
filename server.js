@@ -1,41 +1,48 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const mongoose = require('mongoose');
+require('dotenv').config();
 const adsRoutes = require('./routes/ads.routes');
-const usersRoutes = require('./routes/users.routes');
+const authRoutes = require('./routes/auth.routes');
+const connectToDB = require('./db');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const mongoose = require('mongoose');
 
 const app = express();
+const PORT = process.env.PORT || 8000;
 
-app.use(cors({
-	origin: '*',
-	methods: 'GET,POST,PUT,DELETE'
-}));
+app.listen(PORT, () => {
+  console.log(`Server listen on ${PORT}`);
+});
+
+connectToDB();
+
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-mongoose.connect('mongodb://localhost:27017/announcements', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-const db = mongoose.connection;
-db.once('open', () => {
-  console.log('Connected to the database');
-});
-db.on('error', err => console.log('Error ' + err));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    store: MongoStore.create({ client: mongoose.connection.getClient() }),
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production' 
+    },
+  })
+);
 
 app.use('/api/ads', adsRoutes);
-app.use('/api/ads', usersRoutes);
+app.use('/auth', authRoutes);
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found...' });
-})
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something wrong!' });
-});
-
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`Server listen on ${PORT}`);
 });

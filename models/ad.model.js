@@ -15,7 +15,7 @@ const adSchema = new mongoose.Schema({
   },
   publishedAt: {
     type: Date,
-    required: true,
+    required: false,
     default: Date.now
   },
   photo: {
