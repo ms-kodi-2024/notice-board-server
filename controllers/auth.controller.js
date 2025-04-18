@@ -1,7 +1,8 @@
 const { body, validationResult } = require('express-validator');
 const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
-const Session = require('../models/session.model');
+const Session = require('../models/Session.model');
+const getImageFileType = require('../utils/getImageFileType');
 
 exports.validateRegister = [
   body('login')
@@ -15,14 +16,11 @@ exports.validateRegister = [
     .withMessage('Password is required')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  body('avatar')
-    .optional()
-    .isString()
-    .withMessage('Avatar must be a string'),
   body('phone')
-    .optional()
     .isString()
-    .withMessage('Phone must be a string')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone is required')
 ];
 
 exports.validateLogin = [
@@ -43,7 +41,11 @@ exports.register = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
-    const { login, password, avatar, phone } = req.body;
+    const { login, password, phone } = req.body;
+    const fileType = req.file ? await getImageFileType(req.file) : 'unknown';
+    if (fileType !== 'image/png' && fileType !== 'image/jpeg' && fileType !== 'image/gif') {
+      return res.status(422).send({ message: 'Invalid image type' });
+    }
     const userWithLogin = await User.findOne({ login });
     if (userWithLogin) {
       return res.status(409).send({ message: 'User with this login already exists' });
@@ -52,8 +54,8 @@ exports.register = async (req, res, next) => {
     const newUser = new User({
       login,
       password: hashedPassword,
-      avatar: (avatar && typeof avatar === 'string') ? avatar : '',
-      phone: (phone && typeof phone === 'string') ? phone : ''
+      avatar: req.file ? req.file.filename : 'unknown',
+      phone
     });
     await newUser.save();
     res.status(201).send({ message: 'User registered successfully ' + newUser.login });
@@ -72,19 +74,18 @@ exports.login = async (req, res, next) => {
     const user = await User.findOne({ login });
     if (!user) {
       return res.status(401).send({ message: 'Login or password are incorrect' });
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (isPasswordValid) {
+      req.session.user = {
+        id: user._id,
+        login: user.login,
+        avatar: user.avatar,
+        phone: user.phone
+      };
+      return res.status(200).send({ message: 'Login successful' });
     } else {
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (isPasswordValid) {
-        req.session.user = {
-          id: user._id,
-          login: user.login,
-          avatar: user.avatar,
-          phone: user.phone
-        };
-        return res.status(200).send({ message: 'Login successful' });
-      } else {
-        return res.status(401).send({ message: 'Login or password are incorrect' });
-      }
+      return res.status(401).send({ message: 'Login or password are incorrect' });
     }
   } catch (error) {
     next(error);

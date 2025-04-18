@@ -1,5 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const Ad = require('../models/ad.model');
+const getImageFileType = require('../utils/getImageFileType');
 
 exports.validateAd = [
   body('title')
@@ -8,14 +9,6 @@ exports.validateAd = [
   body('description')
     .isLength({ min: 20, max: 1000 })
     .withMessage('Description must be between 20 and 1000 characters long.'),
-  body('photo')
-    .custom((value) => {
-      if (typeof value === 'string' && value.startsWith('/')) {
-        return true;
-      }
-      return validator.isURL(value);
-    })
-    .withMessage('Photo must be a valid absolute URL or a relative path.'),
   body('price')
     .isNumeric()
     .withMessage('Price must be a number.')
@@ -25,6 +18,31 @@ exports.validateAd = [
     .notEmpty()
     .withMessage('Location is required.'),
   body('sellerInfo')
+    .notEmpty()
+    .withMessage('Seller info is required.')
+];
+
+exports.validateUpdate = [
+  body('title')
+    .optional({ checkFalsy: true })
+    .isLength({ min: 10, max: 50 })
+    .withMessage('Title must be between 10 and 50 characters long.'),
+  body('description')
+    .optional({ checkFalsy: true })
+    .isLength({ min: 20, max: 1000 })
+    .withMessage('Description must be between 20 and 1000 characters long.'),
+  body('price')
+    .optional({ checkFalsy: true })
+    .isNumeric()
+    .withMessage('Price must be a number.')
+    .custom(value => value >= 0)
+    .withMessage('Price must be at least 0.'),
+  body('location')
+    .optional({ checkFalsy: true })
+    .notEmpty()
+    .withMessage('Location is required.'),
+  body('sellerInfo')
+    .optional({ checkFalsy: true })
     .notEmpty()
     .withMessage('Seller info is required.')
 ];
@@ -56,11 +74,15 @@ exports.createAd = async (req, res, next) => {
     return res.status(422).json({ errors: errors.array() });
   }
   try {
-    const { title, description, photo, price, location, sellerInfo } = req.body;
+    const { title, description, price, location, sellerInfo } = req.body;
+    const fileType = req.file ? await getImageFileType(req.file) : 'unknown';
+    if (fileType !== 'image/png' && fileType !== 'image/jpeg' && fileType !== 'image/gif') {
+      return res.status(422).send({ message: 'Invalid image type' });
+    }
     const newAd = new Ad({
       title,
       description,
-      photo,
+      photo: req.file ? req.file.filename : 'unknown',
       price,
       location,
       sellerInfo
@@ -78,9 +100,23 @@ exports.updateAd = async (req, res, next) => {
     return res.status(422).json({ errors: errors.array() });
   }
   try {
+    const updateData = {};
+    ['title', 'description', 'price', 'location', 'sellerInfo'].forEach(field => {
+      const val = req.body[field];
+      if (val !== undefined && val !== '') {
+        updateData[field] = val;
+      }
+    });
+    if (req.file) {
+      const fileType = await getImageFileType(req.file);
+      if (!['image/png', 'image/jpeg', 'image/gif'].includes(fileType)) {
+        return res.status(422).json({ message: 'Invalid image type' });
+      }
+      updateData.photo = req.file.filename;
+    }
     const updatedAd = await Ad.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
     if (!updatedAd) {
@@ -88,9 +124,13 @@ exports.updateAd = async (req, res, next) => {
     }
     res.json(updatedAd);
   } catch (err) {
+    if (err.name === 'ValidationError' || err.name === 'CastError') {
+      return res.status(422).json({ message: err.message });
+    }
     next(err);
   }
 };
+
 
 exports.deleteAd = async (req, res, next) => {
   try {
