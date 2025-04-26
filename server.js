@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8000';
 
 app.listen(PORT, () => {
   console.log(`Server listen on ${PORT}`);
@@ -19,7 +20,7 @@ app.listen(PORT, () => {
 connectToDB();
 
 app.use(cors({
-  origin: 'http://localhost:8000',
+  origin: FRONTEND_URL,
   credentials: true,
 }));
 app.use(express.json());
