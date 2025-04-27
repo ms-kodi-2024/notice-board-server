@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const mongoUrl = process.env.MONGO_URL;
+    const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017/announcements';
     await mongoose.connect(mongoUrl);
-    console.log('Connected to the database');
+    console.log(`Connected to the database at ${mongoUrl}`);
     return mongoose.connection;
   } catch (error) {
     console.error('Error ' + error);
