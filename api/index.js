@@ -9,6 +9,8 @@ const authRoutes = require('../routes/auth.routes');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 connectDB()
   .then(() => console.log('MongoDB connected'))
   .catch(err => {
@@ -28,12 +30,13 @@ app.use(session({
     mongoUrl: process.env.MONGO_URL,
     collectionName: 'sessions'
   }),
+  name: 'connect.sid',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: 'none'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
