@@ -6,9 +6,9 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 
-const adsRoutes = require('./routes/ads.routes');
-const authRoutes = require('./routes/auth.routes');
-const connectToDB = require('./db');
+const adsRoutes = require('../routes/ads.routes');
+const authRoutes = require('../routes/auth.routes');
+const connectToDB = require('../db');
 
 const app = express();
 
