@@ -32,10 +32,6 @@ const app = express();
     secret: process.env.SESSION_SECRET,
     store: MongoStore.create({
       mongoUrl,
-      mongoOptions: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      },
       collectionName: 'sessions',
     }),
     resave: false,
