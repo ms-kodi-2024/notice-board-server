@@ -27,15 +27,15 @@ app.use(session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URL,
     mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
-    collectionName: 'sessions',
+    collectionName: 'sessions'
   }),
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' },
+  cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
-app.use('/ads', adsRoutes);
-app.use('/auth', authRoutes);
+app.use('/api/ads', adsRoutes);
+app.use('/api/auth', authRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Not found...' }));
 app.use((err, req, res, next) => {
