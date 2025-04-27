@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const User = require('../models/user.model');
+const User = require('../models/User.model');
 const bcrypt = require('bcryptjs');
 const Session = require('../models/Session.model');
 const getImageFileType = require('../utils/getImageFileType');

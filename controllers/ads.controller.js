@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const Ad = require('../models/ad.model');
+const Ad = require('../models/Ad.model');
 const getImageFileType = require('../utils/getImageFileType');
 
 exports.validateAd = [
