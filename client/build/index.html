@@ -6,6 +6,7 @@
   <style>
     .container { display: flex; }
     .ads-container, .users-container { width: 50%; }
+    small { color: #666; font-size: 0.9em; }
   </style>
 </head>
 <body>
@@ -20,12 +21,15 @@
       <section>
         <h2>Create Ad</h2>
         <form id="createAdForm" enctype="multipart/form-data">
-          <p><label>Title: <input type="text" name="title"></label></p>
-          <p><label>Description: <textarea name="description"></textarea></label></p>
-          <p><label>Photo: <input type="file" name="photo" accept="image/*"></label></p>
-          <p><label>Price: <input type="number" name="price"></label></p>
-          <p><label>Location: <input type="text" name="location"></label></p>
-          <p><label>Seller Info: <input type="text" name="sellerInfo"></label></p>
+          <p><label>Title: <input type="text" name="title" required></label></p>
+          <p><label>Description: <textarea name="description" required></textarea></label></p>
+          <p>
+            <label>Photo: <input type="file" name="photo" accept="image/*" required></label><br>
+            <small>Max file size: 4 MB</small>
+          </p>
+          <p><label>Price: <input type="number" name="price" required></label></p>
+          <p><label>Location: <input type="text" name="location" required></label></p>
+          <p><label>Seller Info: <input type="text" name="sellerInfo" required></label></p>
           <button type="submit">Create Ad</button>
         </form>
       </section>
@@ -38,10 +42,13 @@
       <section>
         <h2>Update Ad</h2>
         <form id="updateAdForm" enctype="multipart/form-data">
-          <p><label>ID: <input type="text" name="id"></label></p>
+          <p><label>ID: <input type="text" name="id" required></label></p>
           <p><label>Title: <input type="text" name="title"></label></p>
           <p><label>Description: <textarea name="description"></textarea></label></p>
-          <p><label>Photo: <input type="file" name="photo" accept="image/*"></label></p>
+          <p>
+            <label>Photo: <input type="file" name="photo" accept="image/*"></label><br>
+            <small>Max file size: 4 MB</small>
+          </p>
           <p><label>Price: <input type="number" name="price"></label></p>
           <p><label>Location: <input type="text" name="location"></label></p>
           <p><label>Seller Info: <input type="text" name="sellerInfo"></label></p>
@@ -58,18 +65,27 @@
       <section>
         <h2>Register User</h2>
         <form id="registerForm" enctype="multipart/form-data">
-          <p><label>Login: <input type="text" name="login"></label></p>
-          <p><label>Password: <input type="password" name="password"></label></p>
-          <p><label>Avatar: <input type="file" name="avatar" accept="image/*"></label></p>
-          <p><label>Phone: <input type="text" name="phone"></label></p>
+          <p><label>Login: <input type="text" name="login" required></label></p>
+          <p>
+            <label>Password: <input type="password" name="password" minlength="6" required></label><br>
+            <small>Minimum 6 characters</small>
+          </p>
+          <p>
+            <label>Avatar: <input type="file" name="avatar" accept="image/*"></label><br>
+            <small>Max file size: 4 MB</small>
+          </p>
+          <p><label>Phone: <input type="text" name="phone" required></label></p>
           <button type="submit">Register</button>
         </form>
       </section>
       <section>
         <h2>Login</h2>
         <form id="loginForm">
-          <p><label>Login: <input type="text" name="login"></label></p>
-          <p><label>Password: <input type="password" name="password"></label></p>
+          <p><label>Login: <input type="text" name="login" required></label></p>
+          <p>
+            <label>Password: <input type="password" name="password" minlength="6" required></label><br>
+            <small>Minimum 6 characters</small>
+          </p>
           <button type="submit">Login</button>
         </form>
       </section>
