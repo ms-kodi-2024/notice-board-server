@@ -1,27 +1,26 @@
 const multer = require('multer');
-const path  = require('path');
+const path = require('path');
+const AWS = require('aws-sdk');
+const multerS3 = require('multer-s3');
+
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
 let storage;
-
 if (process.env.NODE_ENV === 'production') {
-  const AWS = require('aws-sdk');
-  const multerS3 = require('multer-s3');
-
   const s3 = new AWS.S3({
     region: process.env.AWS_REGION,
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
   });
 
   storage = multerS3({
     s3,
     bucket: process.env.S3_BUCKET,
     key: (req, file, cb) => {
-      const ext  = file.originalname.split('.').pop();
-      const name = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      cb(null, name);
+      const ext = file.originalname.split('.').pop();
+      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`);
     }
   });
 } else {
@@ -38,7 +37,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: MAX_FILE_SIZE }
 });
 
 module.exports = upload;
