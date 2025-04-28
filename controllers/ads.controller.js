@@ -75,14 +75,23 @@ exports.createAd = async (req, res, next) => {
   }
   try {
     const { title, description, price, location, sellerInfo } = req.body;
-    const fileType = req.file ? await getImageFileType(req.file) : 'unknown';
-    if (fileType !== 'image/png' && fileType !== 'image/jpeg' && fileType !== 'image/gif') {
-      return res.status(422).send({ message: 'Invalid image type' });
+    let fileType = 'unknown';
+    if (req.file) {
+      if (req.file.location) {
+        fileType = req.file.mimetype;
+      } else {
+        fileType = await getImageFileType(req.file);
+      }
+    }
+    if (!['image/png', 'image/jpeg', 'image/gif'].includes(fileType)) {
+      return res.status(422).json({ message: 'Invalid image type' });
     }
     const newAd = new Ad({
       title,
       description,
-      photo: req.file ? req.file.filename : 'unknown',
+      photo: req.file
+        ? (req.file.location ? req.file.key : req.file.filename)
+        : undefined,
       price,
       location,
       sellerInfo
@@ -108,11 +117,18 @@ exports.updateAd = async (req, res, next) => {
       }
     });
     if (req.file) {
-      const fileType = await getImageFileType(req.file);
+      let fileType = 'unknown';
+      if (req.file.location) {
+        fileType = req.file.mimetype;
+      } else {
+        fileType = await getImageFileType(req.file);
+      }
       if (!['image/png', 'image/jpeg', 'image/gif'].includes(fileType)) {
         return res.status(422).json({ message: 'Invalid image type' });
       }
-      updateData.photo = req.file.filename;
+      updateData.photo = req.file.location
+        ? req.file.key
+        : req.file.filename;
     }
     const updatedAd = await Ad.findByIdAndUpdate(
       req.params.id,
@@ -130,7 +146,6 @@ exports.updateAd = async (req, res, next) => {
     next(err);
   }
 };
-
 
 exports.deleteAd = async (req, res, next) => {
   try {

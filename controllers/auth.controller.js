@@ -41,78 +41,98 @@ exports.register = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
+
     const { login, password, phone } = req.body;
-    const fileType = req.file ? await getImageFileType(req.file) : 'unknown';
-    if (fileType !== 'image/png' && fileType !== 'image/jpeg' && fileType !== 'image/gif') {
-      return res.status(422).send({ message: 'Invalid image type' });
+
+    // Handle avatar upload both locally and on S3
+    let fileType = 'unknown';
+    let avatarValue;
+    if (req.file) {
+      if (req.file.location) {
+        // production: multer-s3
+        fileType = req.file.mimetype;
+        avatarValue = req.file.key;
+      } else {
+        // development: diskStorage
+        fileType = await getImageFileType(req.file);
+        avatarValue = req.file.filename;
+      }
     }
-    const userWithLogin = await User.findOne({ login });
-    if (userWithLogin) {
-      return res.status(409).send({ message: 'User with this login already exists' });
+
+    if (!['image/png', 'image/jpeg', 'image/gif'].includes(fileType)) {
+      return res.status(422).json({ message: 'Invalid image type' });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const existing = await User.findOne({ login });
+    if (existing) {
+      return res.status(409).json({ message: 'User with this login already exists' });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
     const newUser = new User({
       login,
-      password: hashedPassword,
-      avatar: req.file ? req.file.filename : 'unknown',
+      password: hashed,
+      avatar: avatarValue,
       phone
     });
     await newUser.save();
-    res.status(201).send({ message: 'User registered successfully ' + newUser.login });
-  } catch (error) {
-    next(error);
+
+    res.status(201).json({ message: `User registered successfully: ${newUser.login}` });
+  } catch (err) {
+    next(err);
   }
 };
 
 exports.login = async (req, res, next) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()){
+    if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
+
     const { login, password } = req.body;
     const user = await User.findOne({ login });
     if (!user) {
-      return res.status(401).send({ message: 'Login or password are incorrect' });
+      return res.status(401).json({ message: 'Login or password are incorrect' });
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (isPasswordValid) {
-      req.session.user = {
-        id: user._id,
-        login: user.login,
-        avatar: user.avatar,
-        phone: user.phone
-      };
-      return res.status(200).send({ message: 'Login successful' });
-    } else {
-      return res.status(401).send({ message: 'Login or password are incorrect' });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(401).json({ message: 'Login or password are incorrect' });
     }
-  } catch (error) {
-    next(error);
+
+    req.session.user = {
+      id: user._id,
+      login: user.login,
+      avatar: user.avatar,
+      phone: user.phone
+    };
+    res.status(200).json({ message: 'Login successful' });
+  } catch (err) {
+    next(err);
   }
 };
 
-exports.getUser = async (req, res, next) => {
+exports.getUser = (req, res, next) => {
   try {
-    res.status(200).send({
-      login: req.session.user && req.session.user.login,
-      avatar: req.session.user && req.session.user.avatar,
-      phone: req.session.user && req.session.user.phone
+    const u = req.session.user || {};
+    res.status(200).json({
+      login: u.login,
+      avatar: u.avatar,
+      phone: u.phone
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
 exports.logout = async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV !== "production") {
+    if (process.env.NODE_ENV !== 'production') {
       await Session.deleteMany({});
     }
     req.session.destroy(err => {
-      if (err) {
-        return next(err);
-      }
+      if (err) return next(err);
       res.clearCookie('connect.sid');
       res.status(200).json({ message: 'Logged out successfully' });
     });
