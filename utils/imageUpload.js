@@ -18,7 +18,6 @@ if (process.env.NODE_ENV === 'production') {
   storage = multerS3({
     s3,
     bucket: process.env.S3_BUCKET,
-    acl: 'public-read',
     key: (req, file, cb) => {
       const ext  = file.originalname.split('.').pop();
       const name = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
