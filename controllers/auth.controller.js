@@ -20,7 +20,7 @@ exports.validateRegister = [
     .isString()
     .trim()
     .notEmpty()
-    .withMessage('Phone is required')
+    .withMessage('Phone is required'),
 ];
 
 exports.validateLogin = [
@@ -32,7 +32,7 @@ exports.validateLogin = [
   body('password')
     .isString()
     .notEmpty()
-    .withMessage('Password is required')
+    .withMessage('Password is required'),
 ];
 
 exports.register = async (req, res, next) => {
@@ -41,22 +41,20 @@ exports.register = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
+    if (!req.file) {
+      return res.status(422).json({ message: 'Avatar is required' });
+    }
 
     const { login, password, phone } = req.body;
+    let fileType;
+    let avatarFilename;
 
-    // Handle avatar upload both locally and on S3
-    let fileType = 'unknown';
-    let avatarValue;
-    if (req.file) {
-      if (req.file.location) {
-        // production: multer-s3
-        fileType = req.file.mimetype;
-        avatarValue = req.file.key;
-      } else {
-        // development: diskStorage
-        fileType = await getImageFileType(req.file);
-        avatarValue = req.file.filename;
-      }
+    if (req.file.location) {
+      fileType = req.file.mimetype;
+      avatarFilename = req.file.key;
+    } else {
+      fileType = await getImageFileType(req.file);
+      avatarFilename = req.file.filename;
     }
 
     if (!['image/png', 'image/jpeg', 'image/gif'].includes(fileType)) {
@@ -72,8 +70,8 @@ exports.register = async (req, res, next) => {
     const newUser = new User({
       login,
       password: hashed,
-      avatar: avatarValue,
-      phone
+      avatar: avatarFilename,
+      phone,
     });
     await newUser.save();
 
@@ -102,10 +100,10 @@ exports.login = async (req, res, next) => {
     }
 
     req.session.user = {
-      id: user._id,
-      login: user.login,
+      id:     user._id.toString(),
+      login:  user.login,
       avatar: user.avatar,
-      phone: user.phone
+      phone:  user.phone,
     };
     res.status(200).json({ message: 'Login successful' });
   } catch (err) {
@@ -117,9 +115,9 @@ exports.getUser = (req, res, next) => {
   try {
     const u = req.session.user || {};
     res.status(200).json({
-      login: u.login,
-      avatar: u.avatar,
-      phone: u.phone
+      login:  u.login  || null,
+      avatar: u.avatar || null,
+      phone:  u.phone  || null,
     });
   } catch (err) {
     next(err);
@@ -132,7 +130,9 @@ exports.logout = async (req, res, next) => {
       await Session.deleteMany({});
     }
     req.session.destroy(err => {
-      if (err) return next(err);
+      if (err) {
+        return next(err);
+      }
       res.clearCookie('connect.sid');
       res.status(200).json({ message: 'Logged out successfully' });
     });

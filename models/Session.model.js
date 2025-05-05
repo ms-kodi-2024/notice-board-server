@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const sessionSchema = new mongoose.Schema({
-    expires: { type: Date, required: true, minlength: 6 },
+    expires: { type: Date, required: true },
     session: { type: String, required: true },
 });
 
